@@ -8,15 +8,14 @@ __all__ = [
     "init",
 ]
 
-def _optimizer_post_hook(optimizer, args, kwargs, watcher=None):
-    watcher.step()
+def _optimizer_post_hook(optimizer, args, kwargs):
+    Watcher.increment_step("Optimizer")
 
 def init(
     **kwargs
 ):
     """
-    This function creates a `Watcher` which handles user provided signals
+    Initialize `Watcher` which handles user provided signals
     """
-    watcher = Watcher(**kwargs)
-    register_optimizer_step_post_hook(partial(_optimizer_post_hook, watcher=watcher))
-    return watcher
+    register_optimizer_step_post_hook(_optimizer_post_hook)
+    return Watcher

@@ -1,5 +1,11 @@
-import torch
 import logging
+import torch
+
+from collections import defaultdict
+from torch.autograd.profiler import KinetoStepTracker
+from warnings import warn
+
+from typing import Dict
 
 class Watcher:
 
@@ -8,13 +14,27 @@ class Watcher:
     """
 
     _profile = None
-    _step_count = 0
-    _total_count = 0
+    _num_new_steps = 0
+    _current_step = -1
+    _step_dict: Dict[str, int] = defaultdict(int)
 
-    @property
+    @classmethod
     def is_profiling(cls):
         return not cls._profile is None
 
+    @classmethod
+    def init_step_count(cls, requester: str):
+        cls._step_dict[requester] = cls._current_step
+
+    @classmethod
+    def erase_step_count(cls, requester: str) -> bool:
+        return cls._step_dict.pop(requester, None) is not None
+
+    @classmethod
+    def current_step(cls) -> int:
+        return cls._current_step
+
+    @classmethod
     def start(cls,
             wait=1,
             warmup=1,
@@ -24,8 +44,8 @@ class Watcher:
             profile_memory=True,
             with_stack=True
         ):
-        if cls.is_profiling:
-            logging.info("trace already in progress")
+        if cls.is_profiling():
+            logging.info("trace already in progress. Skipping this trace request")
             return
         config = {
             'schedule' : {
@@ -39,21 +59,35 @@ class Watcher:
                 'with_stack' : with_stack
             }
         }
-        cls._total_count = wait + warmup + active
+        cls._num_new_steps = wait + warmup + active
         cls._profile = torch.profiler.profile(
             schedule=torch.profiler.schedule(**config['schedule']),
             on_trace_ready=torch.profiler.tensorboard_trace_handler(logdir),
             **config['profiler']
         )
+        cls._profile.start()
 
-    def step(cls):
-        if not cls.is_profiling:
-            return
-        
-        cls._profile.step()
-        cls._step_count += 1
-        
-        if cls._step_count >= cls._total_count:
-            cls._profile.stop()
-            cls._profile = None
-            cls._step_count = 0
+    @classmethod
+    def increment_step(cls, requester: str) -> int:
+        """Increments the step count for the requester.
+        returns global step count
+        """
+        if requester not in cls._step_dict:
+            cls.init_step_count(requester)
+        cls._step_dict[requester] += 1
+        new_step = max(cls._step_dict.values())
+        if new_step > cls._current_step:
+            delta = new_step - cls._current_step
+            if delta > 1:
+                warn("Profiler step count has increased more than 1 - "
+                     f"current_step = {cls._current_step} step dict =  {cls._step_dict}")
+            for _ in range(0, delta):
+                if cls.is_profiling(): cls._profile.step()
+            cls._current_step = new_step
+        if cls.is_profiling():
+            if delta >= cls._num_new_steps:
+                cls._profile.stop()
+                cls._profile = None
+            else:
+                cls._num_new_steps -= delta
+        return cls._current_step
