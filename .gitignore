@@ -10,4 +10,4 @@ build/
 dist/
 
 log/
-__pycache__/
+udjat/__pycache__/

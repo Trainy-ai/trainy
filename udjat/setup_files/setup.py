@@ -60,14 +60,16 @@ setuptools.setup(
     author='Trainy Team',
     license='Apache 2.0',
     readme='README.md',
-    description='Udjat: An observability tool for profiling PyTorch training on demand',
+    description='Trainy: An observability tool for profiling PyTorch training on demand',
     long_description=long_description,
     long_description_content_type='text/markdown',
     setup_requires=['wheel'],
     requires_python='>=3.7',
     install_requires=install_requires,
     entry_points={
-        'console_scripts': ['udjat = udjat.cli:cli'],
+        'console_scripts': [
+            'trainy = udjat.cli:trainy'
+            ],
     },
     include_package_data=True,
     classifiers=[

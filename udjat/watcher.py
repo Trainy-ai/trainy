@@ -1,11 +1,21 @@
+import http.server
+import json
 import logging
-import torch
+import os
+import socketserver
 
 from collections import defaultdict
-from torch.autograd.profiler import KinetoStepTracker
 from warnings import warn
+from torch.profiler import profile, schedule, tensorboard_trace_handler
 
 from typing import Dict
+
+
+if 'LOCAL_RANK' in os.environ:
+    # Environment variables set by torch.distributed.launch or torchrun
+    LOCAL_RANK = int(os.environ['LOCAL_RANK'])
+else:
+    LOCAL_RANK = 0
 
 class Watcher:
 
@@ -59,10 +69,13 @@ class Watcher:
                 'with_stack' : with_stack
             }
         }
+        logdir = os.path.abspath(logdir)
+        if LOCAL_RANK == 0: 
+            logging.info(f"saving traces to {logdir}")
         cls._num_new_steps = wait + warmup + active
-        cls._profile = torch.profiler.profile(
-            schedule=torch.profiler.schedule(**config['schedule']),
-            on_trace_ready=torch.profiler.tensorboard_trace_handler(logdir),
+        cls._profile = profile(
+            schedule=schedule(**config['schedule']),
+            on_trace_ready=tensorboard_trace_handler(logdir),
             **config['profiler']
         )
         cls._profile.start()
@@ -91,3 +104,21 @@ class Watcher:
             else:
                 cls._num_new_steps -= delta
         return cls._current_step
+
+class RequestHandler(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
+        post_data = self.rfile.read(content_length) # <--- Gets the data itself
+        profiler_config = json.loads(post_data.decode('utf-8'))
+        Watcher.start(**profiler_config)
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        reply = f'Starting trace on {LOCAL_RANK}. Saving to {os.path.abspath(profiler_config["logdir"])}'
+        logging.info(reply)
+        self.wfile.write(reply.encode())
+
+def start_server():
+    server_address = ('0.0.0.0', 25000 + LOCAL_RANK)
+    httpd = http.server.ThreadingHTTPServer(server_address, RequestHandler)
+    httpd.serve_forever()
