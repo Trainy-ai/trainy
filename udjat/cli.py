@@ -5,6 +5,8 @@ import os
 import ray
 import requests
 
+from ray.util import state
+
 ray.init(address='auto')
 
 async def post_profile(session, url, config):
@@ -15,9 +17,11 @@ async def post_profile(session, url, config):
 async def trace_exec(config):
     async with aiohttp.ClientSession() as session:
         tasks = []
-        for i in range(8):
-            url = f'http://127.0.0.1:{25000 + i}'
-            tasks.append(asyncio.ensure_future(post_profile(session, url, config)))
+        for node in state.list_nodes(filters=[('state', '=', "ALIVE")]):
+            num_gpus = int(node.resources_total['GPU'])
+            for i in range(num_gpus):
+                url = f'http://{node.node_ip}:{25000 + i}'
+                tasks.append(asyncio.ensure_future(post_profile(session, url, config)))
 
         responses = await asyncio.gather(*tasks)
         for r in responses:

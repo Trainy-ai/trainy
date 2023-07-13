@@ -40,21 +40,28 @@ def init(
     Initialize `Watcher` which handles user provided signals
     """
     import time
-
+    logging.info("attaching to udjat ray daemon")
     try:
-        if not ray.is_initialized():
-            if _is_master_node() and LOCAL_RANK == 0:
-                subprocess.run(f'ray start --head --port {constants.UDJAT_REMOTE_RAY_PORT}', 
-                shell=True,
-                stderr=subprocess.DEVNULL)
-            elif not _is_master_node() and LOCAL_RANK == 0:
-                subprocess.run(f"ray start --address='{MASTER_ADDR}:{constants.UDJAT_REMOTE_RAY_PORT}'",
-                shell=True,
-                stderr=subprocess.DEVNULL)
+        if _is_master_node() and LOCAL_RANK == 0:
+            subprocess.run(f'ray start --head --port {constants.UDJAT_REMOTE_RAY_PORT}', 
+            shell=True,
+            stderr=subprocess.DEVNULL)
+        elif not _is_master_node() and LOCAL_RANK == 0:
+            subprocess.run(f"ray start --address='{MASTER_ADDR}:{constants.UDJAT_REMOTE_RAY_PORT}'",
+            shell=True,
+            stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
         logging.info(f'ray is already started on {WORLD_RANK}')
-    time.sleep(5)
-    ray.init(address='auto')
+    
+    MAX_RETRIES = 5
+    retries = 0
+    while not ray.is_initialized() and retries < MAX_RETRIES:
+        try:
+            ray.init(address='auto')
+        except:
+            print(f'ray head not created yet on {MASTER_ADDR}:{constants.UDJAT_REMOTE_RAY_PORT}. Trying again in 5 seconds')
+            time.sleep(5)
+        retries += 1
     
     register_optimizer_step_post_hook(_optimizer_post_hook)
     # Start the server in a separate thread

@@ -2,6 +2,7 @@ import http.server
 import json
 import logging
 import os
+import socket
 import socketserver
 
 from collections import defaultdict
@@ -10,12 +11,21 @@ from torch.profiler import profile, schedule, tensorboard_trace_handler
 
 from typing import Dict
 
-
 if 'LOCAL_RANK' in os.environ:
     # Environment variables set by torch.distributed.launch or torchrun
     LOCAL_RANK = int(os.environ['LOCAL_RANK'])
+    WORLD_SIZE = int(os.environ['WORLD_SIZE'])
+    WORLD_RANK = int(os.environ['RANK'])
+    MASTER_ADDR = os.environ['MASTER_ADDR']
 else:
     LOCAL_RANK = 0
+    WORLD_RANK = 0
+
+
+## getting the hostname by socket.gethostname() method
+hostname = socket.gethostname()
+## getting the IP address using socket.gethostbyname() method
+ip_address = socket.gethostbyname(hostname)
 
 class Watcher:
 
@@ -114,7 +124,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        reply = f'Starting trace on {LOCAL_RANK}. Saving to {os.path.abspath(profiler_config["logdir"])}'
+        reply = f'Starting trace on {ip_address}, WORLD_RANK = {WORLD_RANK}. Saving to {os.path.abspath(profiler_config["logdir"])}'
         logging.info(reply)
         self.wfile.write(reply.encode())
 
