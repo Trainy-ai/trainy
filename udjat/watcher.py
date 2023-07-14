@@ -12,6 +12,7 @@ from ray.tune.utils.file_transfer import sync_dir_between_nodes
 from ray.tune.syncer import _BackgroundProcess
 from warnings import warn
 from typing import Dict
+from udjat import constants
 
 if 'LOCAL_RANK' in os.environ:
     # Environment variables set by torch.distributed.launch or torchrun
@@ -29,22 +30,16 @@ hostname = socket.gethostname()
 ip_address = socket.gethostbyname(hostname)
 
 def trace_handler(p, path):
-        tensorboard_trace_handler(path)(p)
+        tmp_trace_holder = os.path.join(path)
+        tensorboard_trace_handler(tmp_trace_holder)(p)
         if path.startswith('s3'):
             raise NotImplementedError("s3 storage not implemented")
             
         # sync to head node by default
-        # syncer = _BackgroundProcess(partial(sync_dir_between_nodes, max_size_bytes=None))
-        # syncer.start(
-        #     ip_address,
-        #     tempdirname,
-        #     MASTER_ADDR,
-        #     path
-        # )
-        # syncer.wait()
-        sync_dir_between_nodes(
+        syncer = _BackgroundProcess(partial(sync_dir_between_nodes, max_size_bytes=None))
+        syncer.start(
             ip_address,
-            tempdirname,
+            tmp_trace_holder,
             MASTER_ADDR,
             path
         )
