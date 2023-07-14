@@ -10,9 +10,14 @@ from ray.util import state
 ray.init(address='auto')
 
 async def post_profile(session, url, config):
-    async with session.post(url, json=config) as resp:
-        result = await resp.text() if resp.status == 200 else f'request to {url} failed'
-        return result
+    try:
+        async with session.post(url, json=config) as resp:
+            result = await resp.text() if resp.status == 200 else f'request to {url} failed'
+            return result
+    except aiohttp.client_exceptions.ClientConnectorError as e:
+        return f'failed to trace {url}. Possibly due to no process running here'
+    except aiohttp.client_exceptions.ServerDisconnectedError as e:
+        return f'failed to trace {url}. Possibly due to no process running here'
 
 async def trace_exec(config):
     async with aiohttp.ClientSession() as session:

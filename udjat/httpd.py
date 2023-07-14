@@ -2,6 +2,7 @@ import http.server
 import json
 import logging
 import os
+import socket
 import socketserver
 from udjat.watcher import Watcher
 
@@ -14,6 +15,11 @@ if 'LOCAL_RANK' in os.environ:
 else:
     LOCAL_RANK = 0
     WORLD_RANK = 0
+
+## getting the hostname by socket.gethostname() method
+hostname = socket.gethostname()
+## getting the IP address using socket.gethostbyname() method
+ip_address = socket.gethostbyname(hostname)
 
 class RequestHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):

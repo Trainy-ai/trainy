@@ -40,6 +40,8 @@ def init(
     """
     Initialize `Watcher` which handles user provided signals
     """
+    os.makedirs(constants.UDJAT_TMPDIR, exist_ok = True) 
+
     import time
     logging.info("attaching to udjat ray daemon")
     try:

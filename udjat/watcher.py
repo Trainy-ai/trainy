@@ -23,28 +23,32 @@ else:
     LOCAL_RANK = 0
     WORLD_RANK = 0
 
-
 ## getting the hostname by socket.gethostname() method
 hostname = socket.gethostname()
 ## getting the IP address using socket.gethostbyname() method
 ip_address = socket.gethostbyname(hostname)
 
 def trace_handler(p, path):
-    with tempfile.TemporaryDirectory() as tempdirname:
-        tensorboard_trace_handler(p)(tempdirname)
-        
+        tensorboard_trace_handler(path)(p)
         if path.startswith('s3'):
             raise NotImplementedError("s3 storage not implemented")
             
         # sync to head node by default
-        _BackgroundProcess(
-            sync_dir_between_nodes(
-                ip_address,
-                tempdirname,
-                MASTER_ADDR,
-                path
-            )
+        # syncer = _BackgroundProcess(partial(sync_dir_between_nodes, max_size_bytes=None))
+        # syncer.start(
+        #     ip_address,
+        #     tempdirname,
+        #     MASTER_ADDR,
+        #     path
+        # )
+        # syncer.wait()
+        sync_dir_between_nodes(
+            ip_address,
+            tempdirname,
+            MASTER_ADDR,
+            path
         )
+
 
 
 class Watcher:
