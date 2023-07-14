@@ -7,7 +7,8 @@ import threading
 from functools import partial
 from torch.optim.optimizer import register_optimizer_step_post_hook
 from udjat import constants
-from udjat.watcher import Watcher, start_server
+from udjat.httpd import start_server
+from udjat.watcher import Watcher
 
 if 'LOCAL_RANK' in os.environ:
     # Environment variables set by torch.distributed.launch or torchrun
@@ -57,10 +58,7 @@ def init(
     retries = 0
     while not ray.is_initialized() and retries < MAX_RETRIES:
         try:
-            if _is_master_node():
-                ray.init(address='auto')
-            else:
-                ray.init(address=f'ray://{MASTER_ADDR}:{constants.UDJAT_REMOTE_RAY_CLIENT_PORT}')
+            ray.init(address=f'ray://{MASTER_ADDR}:{constants.UDJAT_REMOTE_RAY_CLIENT_PORT}')
         except:
             print(f'ray head not created yet on {MASTER_ADDR}. Trying again in 5 seconds')
             time.sleep(5)

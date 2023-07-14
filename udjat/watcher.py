@@ -1,14 +1,16 @@
-import http.server
+
 import json
 import logging
 import os
 import socket
-import socketserver
+import tempfile
 
 from collections import defaultdict
-from warnings import warn
 from torch.profiler import profile, schedule, tensorboard_trace_handler
-
+from functools import partial
+from ray.tune.utils.file_transfer import sync_dir_between_nodes
+from ray.tune.syncer import _BackgroundProcess
+from warnings import warn
 from typing import Dict
 
 if 'LOCAL_RANK' in os.environ:
@@ -26,6 +28,24 @@ else:
 hostname = socket.gethostname()
 ## getting the IP address using socket.gethostbyname() method
 ip_address = socket.gethostbyname(hostname)
+
+def trace_handler(p, path):
+    with tempfile.TemporaryDirectory() as tempdirname:
+        tensorboard_trace_handler(p)(tempdirname)
+        
+        if path.startswith('s3'):
+            raise NotImplementedError("s3 storage not implemented")
+            
+        # sync to head node by default
+        _BackgroundProcess(
+            sync_dir_between_nodes(
+                ip_address,
+                tempdirname,
+                MASTER_ADDR,
+                path
+            )
+        )
+
 
 class Watcher:
 
@@ -85,7 +105,7 @@ class Watcher:
         cls._num_new_steps = wait + warmup + active
         cls._profile = profile(
             schedule=schedule(**config['schedule']),
-            on_trace_ready=tensorboard_trace_handler(logdir),
+            on_trace_ready=partial(trace_handler, path=logdir),
             **config['profiler']
         )
         cls._profile.start()
@@ -114,21 +134,3 @@ class Watcher:
             else:
                 cls._num_new_steps -= delta
         return cls._current_step
-
-class RequestHandler(http.server.BaseHTTPRequestHandler):
-    def do_POST(self):
-        content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
-        post_data = self.rfile.read(content_length) # <--- Gets the data itself
-        profiler_config = json.loads(post_data.decode('utf-8'))
-        Watcher.start(**profiler_config)
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        reply = f'Starting trace on {ip_address}, WORLD_RANK = {WORLD_RANK}. Saving to {os.path.abspath(profiler_config["logdir"])}'
-        logging.info(reply)
-        self.wfile.write(reply.encode())
-
-def start_server():
-    server_address = ('0.0.0.0', 25000 + LOCAL_RANK)
-    httpd = http.server.ThreadingHTTPServer(server_address, RequestHandler)
-    httpd.serve_forever()
