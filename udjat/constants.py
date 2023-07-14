@@ -5,4 +5,4 @@
 # We note down the ports in ~/.sky/ray_port.json for backward compatibility.
 UDJAT_REMOTE_RAY_PORT = 6381
 UDJAT_REMOTE_RAY_DASHBOARD_PORT = 8261
-UDJAT_REMOTE_RAY_TEMPDIR = '/tmp/ray_udjat'
+UDJAT_REMOTE_RAY_CLIENT_PORT= 10002

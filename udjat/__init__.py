@@ -43,7 +43,7 @@ def init(
     logging.info("attaching to udjat ray daemon")
     try:
         if _is_master_node() and LOCAL_RANK == 0:
-            subprocess.run(f'ray start --head --port {constants.UDJAT_REMOTE_RAY_PORT}', 
+            subprocess.run(f'ray start --head --port {constants.UDJAT_REMOTE_RAY_PORT} --ray-client-server-port {constants.UDJAT_REMOTE_RAY_CLIENT_PORT}', 
             shell=True,
             stderr=subprocess.DEVNULL)
         elif not _is_master_node() and LOCAL_RANK == 0:
@@ -57,9 +57,12 @@ def init(
     retries = 0
     while not ray.is_initialized() and retries < MAX_RETRIES:
         try:
-            ray.init(address='auto')
+            if _is_master_node():
+                ray.init(address='auto')
+            else:
+                ray.init(address=f'ray://{MASTER_ADDR}:{constants.UDJAT_REMOTE_RAY_CLIENT_PORT}')
         except:
-            print(f'ray head not created yet on {MASTER_ADDR}:{constants.UDJAT_REMOTE_RAY_PORT}. Trying again in 5 seconds')
+            print(f'ray head not created yet on {MASTER_ADDR}. Trying again in 5 seconds')
             time.sleep(5)
         retries += 1
     
