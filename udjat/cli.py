@@ -2,12 +2,13 @@ import aiohttp
 import asyncio
 import click
 import os
-import ray
 import requests
 
 from ray.util import state
 
-ray.init(address='auto')
+from udjat import connect_ray
+
+connect_ray()
 
 async def post_profile(session, url, config):
     try:

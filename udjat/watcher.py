@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import shutil
 import socket
 import tempfile
 
@@ -30,19 +31,23 @@ hostname = socket.gethostname()
 ip_address = socket.gethostbyname(hostname)
 
 def trace_handler(p, path):
-        tmp_trace_holder = os.path.join(path)
-        tensorboard_trace_handler(tmp_trace_holder)(p)
-        if path.startswith('s3'):
-            raise NotImplementedError("s3 storage not implemented")
+        with tempfile.TemporaryDirectory(suffix=f'_rank={LOCAL_RANK}') as tempdir:
+            tensorboard_trace_handler(tempdir)(p)
+            if path.startswith('s3'):
+                raise NotImplementedError("s3 storage not implemented")
+                
+            # sync to head node by default
+            syncer = _BackgroundProcess(partial(sync_dir_between_nodes, max_size_bytes=None))
+            syncer.start(
+                ip_address,
+                tempdir,
+                MASTER_ADDR,
+                path
+            )
+            syncer.wait()
+            print(os.listdir(path))
             
-        # sync to head node by default
-        syncer = _BackgroundProcess(partial(sync_dir_between_nodes, max_size_bytes=None))
-        syncer.start(
-            ip_address,
-            tmp_trace_holder,
-            MASTER_ADDR,
-            path
-        )
+
 
 
 
