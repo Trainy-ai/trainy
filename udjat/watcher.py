@@ -18,11 +18,13 @@ from udjat import constants
 if 'LOCAL_RANK' in os.environ:
     # Environment variables set by torch.distributed.launch or torchrun
     LOCAL_RANK = int(os.environ['LOCAL_RANK'])
+    LOCAL_WORLD_SIZE = int(os.environ['LOCAL_WORLD_SIZE'])
     WORLD_SIZE = int(os.environ['WORLD_SIZE'])
     WORLD_RANK = int(os.environ['RANK'])
     MASTER_ADDR = os.environ['MASTER_ADDR']
 else:
     LOCAL_RANK = 0
+    LOCAL_WORLD_SIZE = 1
     WORLD_RANK = 0
 
 ## getting the hostname by socket.gethostname() method
@@ -31,26 +33,21 @@ hostname = socket.gethostname()
 ip_address = socket.gethostbyname(hostname)
 
 def trace_handler(p, path):
-        with tempfile.TemporaryDirectory(suffix=f'_rank={LOCAL_RANK}') as tempdir:
+    if path.startswith('s3'):
+        raise NotImplementedError("s3 storage not implemented")
+    elif ip_address != MASTER_ADDR:
+        with tempfile.TemporaryDirectory(suffix=f'_rank={LOCAL_RANK}') as tempdir:       
+            # there's a weird race condition with torchrun for the same machine
             tensorboard_trace_handler(tempdir)(p)
-            if path.startswith('s3'):
-                raise NotImplementedError("s3 storage not implemented")
-                
-            # sync to head node by default
-            syncer = _BackgroundProcess(partial(sync_dir_between_nodes, max_size_bytes=None))
-            syncer.start(
+            sync_dir_between_nodes(
                 ip_address,
                 tempdir,
                 MASTER_ADDR,
                 path
             )
-            syncer.wait()
-            print(os.listdir(path))
+    else:
+        tensorboard_trace_handler(path)(p)
             
-
-
-
-
 class Watcher:
 
     """

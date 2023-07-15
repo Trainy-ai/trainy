@@ -40,15 +40,7 @@ def _optimizer_post_hook(optimizer, args, kwargs):
     Watcher.increment_step("Optimizer")
     
 def connect_ray():
-    MAX_RETRIES = 5
-    retries = 0
-    while not ray.is_initialized() and retries < MAX_RETRIES:
-        try:
-            ray.init(address=f'ray://{MASTER_ADDR}:{constants.UDJAT_REMOTE_RAY_CLIENT_PORT}')
-        except:
-            print(f'ray head not created yet on {MASTER_ADDR}. Trying again in 5 seconds')
-            time.sleep(5)
-        retries += 1
+    ray.init(address=f'ray://{MASTER_ADDR}:{constants.UDJAT_REMOTE_RAY_CLIENT_PORT}')
 
 def init(
     **kwargs
@@ -57,7 +49,6 @@ def init(
     Initialize `Watcher` which handles user provided signals
     """
     os.makedirs(constants.UDJAT_TMPDIR, exist_ok = True) 
-    assert ray.is_initialized(), "Udjat hasn't been started, run `bootstrap_udjat.sh"
     connect_ray()
     register_optimizer_step_post_hook(_optimizer_post_hook)
     # Start the server in a separate thread
