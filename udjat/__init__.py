@@ -40,7 +40,7 @@ def _optimizer_post_hook(optimizer, args, kwargs):
     Watcher.increment_step("Optimizer")
     
 def connect_ray():
-    ray.init(address=f'ray://{MASTER_ADDR}:{constants.UDJAT_REMOTE_RAY_CLIENT_PORT}')
+    ray.init(address=f'ray://{MASTER_ADDR}:{constants.UDJAT_REMOTE_RAY_CLIENT_PORT}', ignore_reinit_error=True)
 
 def init(
     **kwargs
