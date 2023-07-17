@@ -1,4 +1,3 @@
-
 import json
 import logging
 import os
@@ -15,13 +14,13 @@ from warnings import warn
 from typing import Dict
 from udjat import constants
 
-if 'LOCAL_RANK' in os.environ:
+if "LOCAL_RANK" in os.environ:
     # Environment variables set by torch.distributed.launch or torchrun
-    LOCAL_RANK = int(os.environ['LOCAL_RANK'])
-    LOCAL_WORLD_SIZE = int(os.environ['LOCAL_WORLD_SIZE'])
-    WORLD_SIZE = int(os.environ['WORLD_SIZE'])
-    WORLD_RANK = int(os.environ['RANK'])
-    MASTER_ADDR = os.environ['MASTER_ADDR']
+    LOCAL_RANK = int(os.environ["LOCAL_RANK"])
+    LOCAL_WORLD_SIZE = int(os.environ["LOCAL_WORLD_SIZE"])
+    WORLD_SIZE = int(os.environ["WORLD_SIZE"])
+    WORLD_RANK = int(os.environ["RANK"])
+    MASTER_ADDR = os.environ["MASTER_ADDR"]
 else:
     LOCAL_RANK = 0
     LOCAL_WORLD_SIZE = 1
@@ -32,22 +31,19 @@ hostname = socket.gethostname()
 ## getting the IP address using socket.gethostbyname() method
 ip_address = socket.gethostbyname(hostname)
 
+
 def trace_handler(p, path):
-    if path.startswith('s3'):
+    if path.startswith("s3"):
         raise NotImplementedError("s3 storage not implemented")
     elif ip_address != MASTER_ADDR:
-        with tempfile.TemporaryDirectory(suffix=f'_rank={LOCAL_RANK}') as tempdir:       
+        with tempfile.TemporaryDirectory(suffix=f"_rank={LOCAL_RANK}") as tempdir:
             # there's a weird race condition with torchrun for the same machine
             tensorboard_trace_handler(tempdir)(p)
-            sync_dir_between_nodes(
-                ip_address,
-                tempdir,
-                MASTER_ADDR,
-                path
-            )
+            sync_dir_between_nodes(ip_address, tempdir, MASTER_ADDR, path)
     else:
         tensorboard_trace_handler(path)(p)
-            
+
+
 class Watcher:
 
     """
@@ -76,38 +72,39 @@ class Watcher:
         return cls._current_step
 
     @classmethod
-    def start(cls,
-            wait=1,
-            warmup=1,
-            active=3,
-            logdir='./log',
-            record_shapes=True,
-            profile_memory=True,
-            with_stack=True
-        ):
+    def start(
+        cls,
+        wait=1,
+        warmup=1,
+        active=3,
+        logdir="./log",
+        record_shapes=True,
+        profile_memory=True,
+        with_stack=True,
+    ):
         if cls.is_profiling():
             logging.info("trace already in progress. Skipping this trace request")
             return
         config = {
-            'schedule' : {
-                'wait' : wait,
-                'warmup' : warmup,
-                'active' : active,
+            "schedule": {
+                "wait": wait,
+                "warmup": warmup,
+                "active": active,
             },
-            'profiler' : {
-                'record_shapes' : record_shapes,
-                'profile_memory' : profile_memory,
-                'with_stack' : with_stack
-            }
+            "profiler": {
+                "record_shapes": record_shapes,
+                "profile_memory": profile_memory,
+                "with_stack": with_stack,
+            },
         }
         logdir = os.path.abspath(logdir)
-        if LOCAL_RANK == 0: 
+        if LOCAL_RANK == 0:
             logging.info(f"saving traces to {logdir}")
         cls._num_new_steps = wait + warmup + active
         cls._profile = profile(
-            schedule=schedule(**config['schedule']),
+            schedule=schedule(**config["schedule"]),
             on_trace_ready=partial(trace_handler, path=logdir),
-            **config['profiler']
+            **config["profiler"],
         )
         cls._profile.start()
 
@@ -123,10 +120,13 @@ class Watcher:
         if new_step > cls._current_step:
             delta = new_step - cls._current_step
             if delta > 1:
-                warn("Profiler step count has increased more than 1 - "
-                     f"current_step = {cls._current_step} step dict =  {cls._step_dict}")
+                warn(
+                    "Profiler step count has increased more than 1 - "
+                    f"current_step = {cls._current_step} step dict =  {cls._step_dict}"
+                )
             for _ in range(0, delta):
-                if cls.is_profiling(): cls._profile.step()
+                if cls.is_profiling():
+                    cls._profile.step()
             cls._current_step = new_step
         if cls.is_profiling():
             if delta >= cls._num_new_steps:

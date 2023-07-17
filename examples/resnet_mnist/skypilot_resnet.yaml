@@ -1,0 +1,37 @@
+name: resnet-distributed-app
+
+resources:
+  accelerators: V100:8
+  cloud: aws
+  region: us-east-2
+  zone: us-east-2b
+
+num_nodes: 8 
+
+workdir: ../../
+
+setup: |
+  set -e  # Exit if any command failed.
+  pip install -e .
+  pip install -r requirements.txt
+  pip install torch torchvision
+  cd examples/resnet_mnist
+  python3 download.py 
+
+run: |
+  # set -e  # Exit if any command failed.
+  cd examples/resnet_mnist
+  num_nodes=`echo "$SKYPILOT_NODE_IPS" | wc -l`
+  master_addr=`echo "$SKYPILOT_NODE_IPS" | head -n1`
+  if [ "${SKYPILOT_NODE_RANK}" == "0" ]; then
+      # Launch the head-only command here.
+      ray start --head --port 6381 --ray-client-server-port 10001 
+  else 
+      # Launch worker-only command here
+      ray start --address ${master_addr}:6381
+  fi
+
+  torchrun \
+        --nproc_per_node=$SKYPILOT_NUM_GPUS_PER_NODE --nnodes=$num_nodes --node_rank=${SKYPILOT_NODE_RANK} \
+        --master_addr=$master_addr --master_port=1234 resnet_main.py \
+        --backend=nccl --batch_size=256 --arch=resnet18

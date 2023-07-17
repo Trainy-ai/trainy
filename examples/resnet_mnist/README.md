@@ -6,3 +6,9 @@ torchrun  \
         resnet_main.py \
         --backend=nccl --batch_size=256 --arch=resnet18
 ```
+
+You can scale up using skypilot with
+
+```
+sky launch -c mycluster skypilot_resnet.yaml
+```
