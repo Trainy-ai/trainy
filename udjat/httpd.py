@@ -2,24 +2,8 @@ import http.server
 import json
 import logging
 import os
-import socket
-import socketserver
 from udjat.watcher import Watcher
-
-if "LOCAL_RANK" in os.environ:
-    # Environment variables set by torch.distributed.launch or torchrun
-    LOCAL_RANK = int(os.environ["LOCAL_RANK"])
-    WORLD_SIZE = int(os.environ["WORLD_SIZE"])
-    WORLD_RANK = int(os.environ["RANK"])
-    MASTER_ADDR = os.environ["MASTER_ADDR"]
-else:
-    LOCAL_RANK = 0
-    WORLD_RANK = 0
-
-## getting the hostname by socket.gethostname() method
-hostname = socket.gethostname()
-## getting the IP address using socket.gethostbyname() method
-ip_address = socket.gethostbyname(hostname)
+from udjat.constants import LOCAL_RANK, WORLD_RANK, ip_address
 
 
 class RequestHandler(http.server.BaseHTTPRequestHandler):

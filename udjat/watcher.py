@@ -1,7 +1,5 @@
-import json
 import logging
 import os
-import shutil
 import socket
 import tempfile
 
@@ -9,27 +7,10 @@ from collections import defaultdict
 from torch.profiler import profile, schedule, tensorboard_trace_handler
 from functools import partial
 from ray.tune.utils.file_transfer import sync_dir_between_nodes
-from ray.tune.syncer import _BackgroundProcess
 from warnings import warn
 from typing import Dict
-from udjat import constants
 
-if "LOCAL_RANK" in os.environ:
-    # Environment variables set by torch.distributed.launch or torchrun
-    LOCAL_RANK = int(os.environ["LOCAL_RANK"])
-    LOCAL_WORLD_SIZE = int(os.environ["LOCAL_WORLD_SIZE"])
-    WORLD_SIZE = int(os.environ["WORLD_SIZE"])
-    WORLD_RANK = int(os.environ["RANK"])
-    MASTER_ADDR = os.environ["MASTER_ADDR"]
-else:
-    LOCAL_RANK = 0
-    LOCAL_WORLD_SIZE = 1
-    WORLD_RANK = 0
-
-## getting the hostname by socket.gethostname() method
-hostname = socket.gethostname()
-## getting the IP address using socket.gethostbyname() method
-ip_address = socket.gethostbyname(hostname)
+from udjat.constants import MASTER_ADDR, LOCAL_RANK, ip_address
 
 
 def trace_handler(p, path):

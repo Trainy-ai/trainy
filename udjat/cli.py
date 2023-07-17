@@ -2,7 +2,6 @@ import aiohttp
 import asyncio
 import click
 import os
-import requests
 
 from ray.util import state
 
