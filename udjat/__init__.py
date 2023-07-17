@@ -17,7 +17,7 @@ def _optimizer_post_hook(optimizer, args, kwargs):
 
 def connect_ray():
     if not ray.is_initialized():
-        ray.init()
+        ray.init(address='auto')
 
 
 def init(**kwargs):

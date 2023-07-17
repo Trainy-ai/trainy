@@ -4,9 +4,15 @@ resources:
   accelerators: V100:8
   cloud: aws
   region: us-east-2
-  zone: us-east-2a
+  zone: us-east-2b
 
-num_nodes: 5 
+num_nodes: 8
+
+file_mounts:
+  ~/traces:
+    name: my-tracesb
+    store: s3 
+    mode: MOUNT
 
 workdir: ../../
 

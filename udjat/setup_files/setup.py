@@ -41,8 +41,8 @@ def parse_readme(readme: str) -> str:
 
 install_requires = [
     'wheel',
-    'ray[default]>=2.2.0',
-    'torch >= 1.12.0',
+    'ray[default]==2.4.0',
+    'torch >= 2.0.0',
     'gpustat == 1.0'
 ]
 

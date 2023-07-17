@@ -16,13 +16,7 @@ from udjat.constants import MASTER_ADDR, LOCAL_RANK, ip_address
 def trace_handler(p, path):
     if path.startswith("s3"):
         raise NotImplementedError("s3 storage not implemented")
-    elif ip_address != MASTER_ADDR:
-        with tempfile.TemporaryDirectory(suffix=f"_rank={LOCAL_RANK}") as tempdir:
-            # there's a weird race condition with torchrun for the same machine
-            tensorboard_trace_handler(tempdir)(p)
-            sync_dir_between_nodes(ip_address, tempdir, MASTER_ADDR, path)
-    else:
-        tensorboard_trace_handler(path)(p)
+    tensorboard_trace_handler(path)(p)
 
 
 class Watcher:
