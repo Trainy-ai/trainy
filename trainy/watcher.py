@@ -1,7 +1,5 @@
 import logging
 import os
-import socket
-import tempfile
 
 from collections import defaultdict
 from torch.profiler import profile, schedule, tensorboard_trace_handler
@@ -10,7 +8,7 @@ from ray.tune.utils.file_transfer import sync_dir_between_nodes
 from warnings import warn
 from typing import Dict
 
-from udjat.constants import MASTER_ADDR, LOCAL_RANK, ip_address
+from trainy.constants import MASTER_ADDR, LOCAL_RANK, ip_address
 
 
 def trace_handler(p, path):

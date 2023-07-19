@@ -1,5 +1,5 @@
-import udjat
+import trainy
+
 
 def test_init():
-    udjat.init()
-    
+    trainy.init()

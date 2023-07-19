@@ -4,13 +4,13 @@ resources:
   accelerators: V100:8
   cloud: aws
   region: us-east-2
-  zone: us-east-2b
+  zone: us-east-2a
 
 num_nodes: 8
 
 file_mounts:
   ~/traces:
-    name: my-tracesb
+    name: my-traces
     store: s3 
     mode: MOUNT
 
@@ -18,7 +18,7 @@ workdir: ../../
 
 setup: |
   set -e  # Exit if any command failed.
-  pip install -e .
+  pip install trainy
   pip install -r requirements.txt
   pip install torchvision
   cd examples/resnet_mnist

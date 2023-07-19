@@ -1,10 +1,19 @@
 import ray
 import threading
+from datetime import datetime
 from torch.optim.optimizer import register_optimizer_step_post_hook
-from udjat.httpd import start_server
-from udjat.watcher import Watcher
+from trainy.httpd import start_server
+from trainy.watcher import Watcher
+from trainy.constants import distribution_conf, hostname, MASTER_ADDR
 
-__version__ = "0.1.0"
+from posthog import Posthog
+
+posthog = Posthog(
+    project_api_key="phc_4UgX80BfVNmYRZ2o3dJLyRMGkv1CxBozPAcPnD29uP4",
+    host="https://app.posthog.com",
+)
+
+__version__ = "0.1.1"
 
 __all__ = [
     "init",
@@ -17,7 +26,7 @@ def _optimizer_post_hook(optimizer, args, kwargs):
 
 def connect_ray():
     if not ray.is_initialized():
-        ray.init(address='auto')
+        ray.init(address="auto")
 
 
 def init(**kwargs):
@@ -25,6 +34,12 @@ def init(**kwargs):
     Initialize `Watcher` which handles user provided signals
     """
     connect_ray()
+    posthog.capture(
+        f"{hash(MASTER_ADDR if MASTER_ADDR != 'localhost' else hostname)}",
+        event="initialized trainy daemon",
+        properties=distribution_conf,
+        timestamp=datetime.utcnow(),
+    )
     register_optimizer_step_post_hook(_optimizer_post_hook)
     # Start the server in a separate thread
     server_thread = threading.Thread(target=start_server)

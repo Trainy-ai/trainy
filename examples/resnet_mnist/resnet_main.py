@@ -13,7 +13,7 @@ import random
 import numpy as np
 import time
 import importlib
-import udjat
+import trainy
 
 if "LOCAL_RANK" in os.environ:
     # Environment variables set by torch.distributed.launch or torchrun
@@ -303,5 +303,5 @@ def main():
 
 
 if __name__ == "__main__":
-    udjat.init()
+    trainy.init()
     main()

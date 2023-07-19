@@ -3,7 +3,9 @@ import asyncio
 import click
 import os
 import ray
-from udjat import connect_ray
+from datetime import datetime
+from trainy import connect_ray, posthog
+from trainy.constants import hostname
 
 connect_ray()
 
@@ -26,7 +28,9 @@ async def trace_exec(config):
         tasks = []
         for node in ray.nodes():
             if node["Alive"]:
-                num_gpus = int(node["Resources"]["GPU"])
+                num_gpus = (
+                    int(node["Resources"]["GPU"]) if "GPU" in node["Resources"] else 0
+                )
                 for i in range(num_gpus):
                     url = f"http://{node['NodeManagerAddress']}:{25000 + i}"
                     tasks.append(
@@ -61,4 +65,10 @@ def trace(logdir, wait, warmup, active, record_shapes, profile_memory, with_stac
         "with_stack": with_stack,
         "logdir": os.path.abspath(logdir),
     }
+    posthog.capture(
+        f"{hash(hostname)}",
+        event="trace requested",
+        properties=config,
+        timestamp=datetime.utcnow(),
+    )
     asyncio.run(trace_exec(config))

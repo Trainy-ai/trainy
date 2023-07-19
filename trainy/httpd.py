@@ -2,8 +2,8 @@ import http.server
 import json
 import logging
 import os
-from udjat.watcher import Watcher
-from udjat.constants import LOCAL_RANK, WORLD_RANK, ip_address
+from trainy.watcher import Watcher
+from trainy.constants import LOCAL_RANK, WORLD_RANK, ip_address
 
 
 class RequestHandler(http.server.BaseHTTPRequestHandler):
