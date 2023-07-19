@@ -54,6 +54,7 @@ class Watcher:
         record_shapes=True,
         profile_memory=True,
         with_stack=True,
+        **kwargs,
     ):
         if cls.is_profiling():
             logging.info("trace already in progress. Skipping this trace request")

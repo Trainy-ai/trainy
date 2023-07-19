@@ -18,9 +18,9 @@ async def post_profile(session, url, config):
             )
             return result
     except aiohttp.client_exceptions.ClientConnectorError as e:
-        return f"failed to trace {url}. Possibly due to no process running here"
+        return f"failed to trace {url}. {e}"
     except aiohttp.client_exceptions.ServerDisconnectedError as e:
-        return f"failed to trace {url}. Possibly due to no process running here"
+        return f"failed to trace {url}. {e}"
 
 
 async def trace_exec(config):
