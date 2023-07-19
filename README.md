@@ -64,4 +64,4 @@ POST request to start profiling.
 ## Need help 
 
 We offer support for both setting up trainy and analyzing program traces. If you are interested,
-please email us at [mailto](mailto:founders@trainy.ai)
+please [email us](mailto:founders@trainy.ai)
