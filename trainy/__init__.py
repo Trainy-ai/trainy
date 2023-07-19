@@ -1,3 +1,4 @@
+import os
 import ray
 import threading
 from datetime import datetime
@@ -7,6 +8,8 @@ from trainy.watcher import Watcher
 from trainy.constants import distribution_conf, hostname, MASTER_ADDR
 
 from posthog import Posthog
+
+os.environ["PYTHONHASHSEED"] = "0"
 
 posthog = Posthog(
     project_api_key="phc_4UgX80BfVNmYRZ2o3dJLyRMGkv1CxBozPAcPnD29uP4",
