@@ -4,7 +4,6 @@ import os
 from collections import defaultdict
 from torch.profiler import profile, schedule, tensorboard_trace_handler
 from functools import partial
-from ray.tune.utils.file_transfer import sync_dir_between_nodes
 from warnings import warn
 from typing import Dict
 
