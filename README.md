@@ -25,7 +25,7 @@ pip install -e trainy
 
 ## Quickstart
 
-If you haven't already, set up ray head and worker nodes. This can configured to happen automatically using (Skypilot)[https://skypilot.readthedocs.io/en/latest/index.html] or K8s
+If you haven't already, set up ray head and worker nodes. This can configured to happen automatically using [Skypilot](https://skypilot.readthedocs.io/en/latest/index.html) or K8s
 
 ```
 # on the head node 
